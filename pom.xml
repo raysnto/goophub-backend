@@ -61,6 +61,43 @@
 			<version>6.1.2</version>
 			<type>pom</type>
 		</dependency>
+		
+		<!-- OWL API Dependecies -->
+		<dependency>
+			<groupId>net.sourceforge.owlapi</groupId>
+			<artifactId>owlapi-api</artifactId>
+			<version>5.1.0</version>
+		</dependency>
+		<dependency>
+			<groupId>net.sourceforge.owlapi</groupId>
+			<artifactId>owlapi-impl</artifactId>
+			<version>5.1.0</version>
+		</dependency>
+		<dependency>
+			<groupId>net.sourceforge.owlapi</groupId>
+			<artifactId>owlapi-parsers</artifactId>
+			<version>5.1.0</version>
+		</dependency>
+		<dependency>
+			<groupId>net.sourceforge.owlapi</groupId>
+			<artifactId>owlapi-oboformat</artifactId>
+			<version>5.1.0</version>
+		</dependency>
+		<dependency>
+			<groupId>net.sourceforge.owlapi</groupId>
+			<artifactId>owlapi-tools</artifactId>
+			<version>5.1.0</version>
+		</dependency>
+		<dependency>
+			<groupId>net.sourceforge.owlapi</groupId>
+			<artifactId>owlapi-rio</artifactId>
+			<version>5.1.0</version>
+		</dependency>
+		<dependency>
+			<groupId>net.sourceforge.owlapi</groupId>
+			<artifactId>owlapi-apibinding</artifactId>
+			<version>5.1.0</version>
+		</dependency>
 	</dependencies>
 	
 	<repositories>

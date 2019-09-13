@@ -78,34 +78,14 @@ public class SearchController {
             @Override
             public Boolean doWithConnection(Connection connection) {
             	try {
-                    // Stardog's full text search is backed by [Lucene](http://lucene.apache.org)
-                    // so you can use the full Lucene search syntax in your queries.
-                    Searcher aSearch = connection
-                            .as(SearchConnection.class)
-                            .search()
-                            .limit(2)
-                            .query(query)
-                            .threshold(0.5);
 
-                    // We can run the search and then iterate over the results
-                    SearchResults aSearchResults = aSearch.search();
-
-                    try (CloseableIterator<SearchResult> resultIt = aSearchResults.iterator()) {
-                        System.out.println("\nAPI results: ");
-                        while (resultIt.hasNext()) {
-                            SearchResult aHit = resultIt.next();
-
-                            System.out.println(aHit.getHit() + " with a score of: " + aHit.getScore());
-                        }
-                    }
-
-                    // The SPARQL syntax is based on the LARQ syntax in Jena.  Here you will
+            		// The SPARQL syntax is based on the LARQ syntax in Jena.  Here you will
                     // see the SPARQL query that is equivalent to the search we just did via `Searcher`,
                     // which we can see when we print the results.
-                    String aQuery = "SELECT DISTINCT ?s ?score WHERE {\n" +
-                            "\t?s ?p ?l.\n" +
-                            "\t( ?l ?score ) <" + SearchConnection.MATCH_PREDICATE + "> ( '"+ query +"' 0.5 2 ).\n" +
-                            "}";
+            		String aQuery = "SELECT DISTINCT ?s WHERE {\n" +
+                            "\t?s rdfs:label ?o .\n" +
+                            "\t(?o ?score) <" + SearchConnection.MATCH_PREDICATE + "> ( \'" + query + "\' 0.5).\n" +
+                        "}";
 
                     SelectQuery query = connection.select(aQuery);
 
