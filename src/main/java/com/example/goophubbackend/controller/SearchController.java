@@ -4,17 +4,14 @@ package com.example.goophubbackend.controller;
 import com.complexible.stardog.ext.spring.ConnectionCallback;
 import com.complexible.stardog.ext.spring.SnarlTemplate;
 import com.complexible.stardog.ext.spring.mapper.SimpleRowMapper;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import com.stardog.stark.query.BindingSet;
-import com.stardog.stark.Literal;
 import com.stardog.stark.query.SelectQueryResult;
-import com.complexible.common.base.CloseableIterator;
 import com.complexible.stardog.StardogException;
 import com.complexible.stardog.api.Connection;
 import com.complexible.stardog.api.SelectQuery;
 import com.complexible.stardog.api.search.SearchConnection;
-import com.complexible.stardog.api.search.SearchResult;
-import com.complexible.stardog.api.search.SearchResults;
-import com.complexible.stardog.api.search.Searcher;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -23,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 @Controller
-@RequestMapping("/tool")
+@RequestMapping("/search")
 public class SearchController {
 
     @Autowired
@@ -67,44 +64,80 @@ public class SearchController {
 
     @RequestMapping(value = "/query{query}", method = RequestMethod.GET)
     @ResponseBody
-    public boolean goopSearch(@RequestParam(value="query") String query) {
+    public String goopSearch(@RequestParam(value="query") String query) {
         System.out.println("Query request with param: " + query);
         // Full text search has the ability to do exactly that. Search the database for a specific value.
         // Here we will specify that we only want results over a score of `0.5`, and no more than `2` results
         // for things that match the search term `man`. Below we will perform the search in two different ways.
-        String finalResult;
+        String finalResult = "";
         snarlTemplate.setReasoning(false);
-        return snarlTemplate.execute(new ConnectionCallback<Boolean>() {
+        finalResult = snarlTemplate.execute(new ConnectionCallback<String>() {
             @Override
-            public Boolean doWithConnection(Connection connection) {
+            public String doWithConnection(Connection connection) {
             	try {
+            		String aQuery =
+                            "PREFIX goop: <https://nemo.inf.ufes.br/dev/ontology/Goop#>\n" +
+                            "SELECT DISTINCT ?s ?type WHERE {\n" +
+                                "\t?s a?type ." +
+                                "\t?s rdfs:label ?o .\n" +
+                                "\t(?o ?score) <" + SearchConnection.MATCH_PREDICATE + "> ( \"" + query + "\" 0.5).\n" +
+                            "}";
+            		/*
+            		"PREFIX goop: <https://nemo.inf.ufes.br/dev/ontology/Goop#>\n" +
+                    "SELECT DISTINCT ?s ?type WHERE {\n" +
+                        "\t?s a?type ." +
+                        "\t?s rdfs:label ?o .\n" +
+                        "\t(?o ?score) <" + SearchConnection.MATCH_PREDICATE + "> ( \"" + query + "\" 0.5).\n" +
+                        "\tFILTER (?type IN (goop:Atomic_Goal, goop:Complex_Goal))" +
+                    "}";
+                    */
 
-            		// The SPARQL syntax is based on the LARQ syntax in Jena.  Here you will
-                    // see the SPARQL query that is equivalent to the search we just did via `Searcher`,
-                    // which we can see when we print the results.
-            		String aQuery = "SELECT DISTINCT ?s WHERE {\n" +
-                            "\t?s rdfs:label ?o .\n" +
-                            "\t(?o ?score) <" + SearchConnection.MATCH_PREDICATE + "> ( \'" + query + "\' 0.5).\n" +
-                        "}";
+                    SelectQuery queryMatch = connection
+                            .select(aQuery);
+                    
+                    JsonObject response = new JsonObject();
+                    JsonArray goops = new JsonArray();
+                   
+                    
+                    
 
-                    SelectQuery query = connection.select(aQuery);
+                    String resultJSON = "{\"goops\": [";
+                    String element;
+                    String elementType;
+                    String[] elementList;
 
-                    try (SelectQueryResult aResult = query.execute()) {
+                    try (SelectQueryResult aResult = queryMatch.execute()) {
                         System.out.println("Query results: ");
                         while (aResult.hasNext()) {
-                            BindingSet result = aResult.next();
-
-                            result.value("s").ifPresent(s -> System.out.println(s + result.literal("score").map(score -> " with a score of: " + Literal.doubleValue(score)).orElse("")));
+                        	BindingSet result = aResult.next();
+                        	JsonObject eachGoop = new JsonObject();
+                        	
+                    		elementList = result.get("s").toString().split("#");
+                    		element = elementList.length > 1 ? element = elementList[1] : elementList[0];
+                    		int i = element.lastIndexOf("/");
+                    		element = element.substring(i+1);  
+                            elementType = result.get("type").toString().split("#")[1];
+                                                        
+                            eachGoop.addProperty("name", element.replace("_", " "));
+                            eachGoop.addProperty("type", elementType.replace("_", " "));
+                            eachGoop.addProperty("iri", result.get("s").toString());
+                                                        
+                            goops.add(eachGoop);
+                                                       
+                            element = "";
+                            elementType = "";
+                            
                         }
+                        response.add("goops", goops);
+                        return response.toString();
                     }
-
                 } catch (StardogException e) {
                     System.out.println("Error with full text search: " + e);
-                    return false;
+                    return "Error with full text search: " + e;
                 }
-                return true;
             }
         });
+        return finalResult;
     }
         
     @RequestMapping(value = "/querygoal{query}", method = RequestMethod.GET)
@@ -112,8 +145,12 @@ public class SearchController {
     public String queryGoal(@RequestParam(value="query") String query) {
         String goal = query;
         System.out.println("Goal: " + goal);
-        String resultJSON = "{ \"classes\": [";
         String eachResult = "";
+        
+        JsonObject response = new JsonObject();
+        JsonArray classes = new JsonArray();
+        JsonArray properties = new JsonArray();
+        
         if(query.isEmpty()) {
             return "{\"error\" : \"Query Empty\"}";
         }
@@ -145,36 +182,23 @@ public class SearchController {
             for (int i = 0; i < resultsClass.size(); i++) {
                 element = resultsClass.get(i).toString().split("=");
                 eachResult = element[1].substring(0, element[1].length()-1);
-                eachResult = "\"" + eachResult + "\"";
-                System.out.println(eachResult);
-                if(i != resultsClass.size()-1) {
-                    resultJSON += eachResult + ", ";
-                }
-                else {
-                    resultJSON += eachResult;
-                }
+                
+                classes.add(eachResult);
+                
             }
         }
 
-        resultJSON += "], \"properties\": [";
         List<Map<String, String>> resultsProperty = snarlTemplate.query(dafaultPropertyQuery, new SimpleRowMapper());
         if(!resultsProperty.isEmpty()) {
             for (int i = 0; i < resultsProperty.size(); i++) {
                 element = resultsProperty.get(i).toString().split("=");
                 eachResult = element[1].substring(0, element[1].length()-1);
-                eachResult = "\"" + eachResult + "\"";
-                System.out.println(eachResult);
-                if(i != resultsProperty.size()-1) {
-                    resultJSON += eachResult + ", ";
-                }
-                else {
-                    resultJSON += eachResult;
-                }
+                properties.add(eachResult);
             }
         }
-        resultJSON = resultJSON + "]}";
-        System.out.println(resultJSON);
-        return resultJSON;
+        response.add("classes", classes);
+        response.add("properties", properties);
+        return response.toString();
     }
 
 }

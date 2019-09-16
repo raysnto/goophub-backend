@@ -18,7 +18,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 @Controller
-@RequestMapping("/api")
+@RequestMapping("/upload")
 public class UploadController {
 
     @Autowired
@@ -82,7 +82,8 @@ public class UploadController {
             Thread.sleep(5000);
             return snarlTemplate.execute(connection -> {
                 try{
-                    connection.add().io().file(Paths.get("/home/gabriel/Downloads/goophub-v2/src/main/resources/temp.rdf"));
+                	System.out.println("Inserindo arquivo");
+                    connection.add().io().file(Paths.get("/home/gabriel/eclipse-workspace/goophub-backend/src/main/resources/temp.rdf"));
                     return "Upload Complete";
                 }
                 catch (Exception e) {
@@ -138,10 +139,12 @@ public class UploadController {
             // Add file to DataBase
             return snarlTemplate.execute(connection -> {
                 try{
-                    connection.add().io().file(Paths.get("/home/gabriel/Downloads/goophub-v2/src/main/resources/temp.rdf"));
+                	System.out.println("Inserindo arquivo");
+                    connection.add().io().file(Paths.get("/home/gabriel/eclipse-workspace/goophub-backend/src/main/resources/temp.rdf"));
                     return "Upload Complete";
                 }
                 catch (Exception e) {
+                	System.out.println("Erro Inserindo aqruivo");
                     return ("Upload error: " + e.getMessage());
                 }
             });

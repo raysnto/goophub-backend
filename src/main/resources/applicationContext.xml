@@ -38,9 +38,12 @@
         </property>
         <property name="inputFiles">
             <list>
+           	<!-- 
             	<value>classpath:foaf.rdf</value>
             	<value>classpath:marvel.rdf</value>
                 <value>classpath:marvel_v2.rdf</value>
+                <value>classpath:goop-meta-model.owl</value>
+             -->
             </list>
         </property>
     </bean>

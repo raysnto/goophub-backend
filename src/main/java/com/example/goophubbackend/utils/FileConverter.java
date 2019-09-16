@@ -25,7 +25,8 @@ public class FileConverter {
             OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
 
             // Loading GOOP Metamodel
-            OWLOntology goop = manager.loadOntologyFromOntologyDocument(new File("/home/gabriel/Downloads/GOOP/goop-meta-model.owl"));
+            OWLOntology goop = manager.
+            		loadOntologyFromOntologyDocument(new File("/home/gabriel/eclipse-workspace/goophub-backend/src/main/resources/goop-meta-model.owl"));
             // Loading source ontology and creating a resource factory
             OWLOntology ontologiaAlvo = manager.loadOntologyFromOntologyDocument(new StringDocumentSource(file));
             String sourceIRI = ontologiaAlvo.getOntologyID().getOntologyIRI().get().toString();
@@ -209,15 +210,13 @@ public class FileConverter {
             OWLObjectPropertyAssertionAxiom hasAxiom = factory.getOWLObjectPropertyAssertionAxiom(has, actor, goal);
             manager.applyChange(new AddAxiom(goop, hasAxiom));
 
-            File fileformated = new File("/home/gabriel/Downloads/goophub-v2/src/main/resources/temp.rdf");
+            File fileformated = new File("/home/gabriel/eclipse-workspace/goophub-backend/src/main/resources/temp.rdf");
 
             System.out.println("RDF/XML: ");
             manager.saveOntology(goop, IRI.create(fileformated.toURI()));
+            return "File saved";
         } catch (Exception e) {
             return e.getMessage();
-        }
-        finally {
-            return "Success";
         }
     }
 
