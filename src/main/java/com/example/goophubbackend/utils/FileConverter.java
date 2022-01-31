@@ -1,32 +1,69 @@
 package com.example.goophubbackend.utils;
 
+import org.apache.commons.io.IOUtils;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.io.StringDocumentSource;
+import org.semanticweb.owlapi.io.StringDocumentTarget;
 import org.semanticweb.owlapi.model.*;
 import org.semanticweb.owlapi.reasoner.OWLReasoner;
 import org.semanticweb.owlapi.reasoner.OWLReasonerFactory;
 import org.semanticweb.owlapi.reasoner.structural.StructuralReasonerFactory;
 import org.semanticweb.owlapi.vocab.OWLRDFVocabulary;
+import org.springframework.util.ResourceUtils;
 
 import java.io.File;
-import java.nio.file.Files;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+
 public class FileConverter {
 
-    public String convertOWLtoGoopAtomic(String file, String actorName, String goalId) {
+    private String getGoopMetamodel() {
+        File file;
+        try {
+            file = ResourceUtils.getFile("C:\\Users\\gabri\\OneDrive\\Documentos\\Mestrado\\GoopHub\\goophub-backend\\src\\main\\resources\\goop-meta-model.owl");
+            InputStream in = new FileInputStream(file);
+            return IOUtils.toString(in, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 
+    private Path getTempFile(Boolean isConverted) {
+        Path file;
+        if(isConverted) {
+            String rootPath = System.getProperty("user.dir");
+            file = Paths.get(rootPath + "/src/main/resources/" + "temp-converted.owl");
+            //file = ResourceUtils.getFile("classpath:temp-converted.owl");
+        } else {
+            String rootPath = System.getProperty("user.dir");
+            file = Paths.get(rootPath + "/src/main/resources/" + "temp.owl");
+            //file = ResourceUtils.getFile("classpath:temp.owl");
+        }
+        return file;
+    }
+
+    public void convertOWLtoGoopAtomic(String file, String actorName, String goalId, String url, String uuid) {
+        
         try {
             // Creating Ontology Manager
             OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
 
             // Loading GOOP Metamodel
-            OWLOntology goop = manager.
-            		loadOntologyFromOntologyDocument(new File("/home/gabriel/eclipse-workspace/goophub-backend/src/main/resources/goop-meta-model.owl"));
+            OWLOntology goop = manager.loadOntologyFromOntologyDocument(new StringDocumentSource(getGoopMetamodel()));
+
             // Loading source ontology and creating a resource factory
             OWLOntology ontologiaAlvo = manager.loadOntologyFromOntologyDocument(new StringDocumentSource(file));
             String sourceIRI = ontologiaAlvo.getOntologyID().getOntologyIRI().get().toString();
@@ -64,6 +101,10 @@ public class FileConverter {
             OWLObjectProperty domain = factory.getOWLObjectProperty("http://www.w3.org/2002/07/owl#domain");
             OWLObjectProperty range = factory.getOWLObjectProperty("http://www.w3.org/2002/07/owl#range");
 
+            // Data Propety needed to image property
+            OWLDataProperty hasURL = factory.getOWLDataProperty("https://nemo.inf.ufes.br/dev/ontology/Goop#hasURL");
+            OWLDataProperty hasUUID = factory.getOWLDataProperty("https://nemo.inf.ufes.br/dev/ontology/Goop#hasUUID");
+
             // Variables to label entities
             OWLLiteral lbl;
             OWLAnnotation label;
@@ -100,7 +141,7 @@ public class FileConverter {
             labelAxiom = factory.getOWLAnnotationAssertionAxiom(goal.asOWLNamedIndividual().getIRI(), label);
             manager.applyChange(new AddAxiom(goop, labelAxiom));
 
-            System.out.println("----- Retrieving All Classes of " + ontologiaAlvo.getOntologyID().getOntologyIRI().get());
+            System.out.println("----- Retrieving All Classes of " + ontologiaAlvo.getOntologyID().getOntologyIRI().get() + " -----");
 
             Set<OWLClass> subClses;
             Set<OWLClass> placeClasses = ontologiaAlvo.getClassesInSignature();
@@ -147,7 +188,7 @@ public class FileConverter {
                 manager.applyChange(new AddAxiom(goop, composedByAxiom));
             }
 
-            System.out.println("----- Retrieving All Object Properties of " + ontologiaAlvo.getOntologyID().getOntologyIRI().get());
+            System.out.println("----- Retrieving All Object Properties of " + ontologiaAlvo.getOntologyID().getOntologyIRI().get() + " -----");
 
             Set<OWLObjectProperty> placeObj = ontologiaAlvo.getObjectPropertiesInSignature();
             for (OWLObjectProperty iter : placeObj) {
@@ -183,7 +224,7 @@ public class FileConverter {
 
                 // Defining the range of each property
                 Set<OWLClass> rangeSet = reasoner.getObjectPropertyRanges(iter, true).getFlattened();
-                for (OWLClass iter2 : domainSet) {
+                for (OWLClass iter2 : rangeSet) {
                     for (OWLIndividual iter3 : classIndividualsList) {
                         String iter3Name = iter3.toString().replace("<", "").replace(">", "");
                         String iter2Name = iter2.toString().replace("<", "").replace(">", "");
@@ -210,28 +251,36 @@ public class FileConverter {
             OWLObjectPropertyAssertionAxiom hasAxiom = factory.getOWLObjectPropertyAssertionAxiom(has, actor, goal);
             manager.applyChange(new AddAxiom(goop, hasAxiom));
 
-            File fileformated = new File("/home/gabriel/eclipse-workspace/goophub-backend/src/main/resources/temp.rdf");
+            OWLDataPropertyAssertionAxiom dataPropertyAssertion = factory.getOWLDataPropertyAssertionAxiom(hasURL, placeGoop, url);
+            manager.applyChange(new AddAxiom(goop, dataPropertyAssertion));
 
-            System.out.println("RDF/XML: ");
+            OWLDataPropertyAssertionAxiom uuidPropertyAssertion = factory.getOWLDataPropertyAssertionAxiom(hasUUID, placeGoop, uuid);
+            manager.applyChange(new AddAxiom(goop, uuidPropertyAssertion));
+
+
+            File fileformated = getTempFile(false).toFile();
+
             manager.saveOntology(goop, IRI.create(fileformated.toURI()));
-            return "File saved";
+            return;
         } catch (Exception e) {
-            return e.getMessage();
+            return;
         }
     }
 
-    public String convertOWLtoGoopComplex(String file, String actorName, String goalId, String decompositionType, String atomicGoals) {
+    public String convertOWLtoGoopComplex(String file, String actorName, String goalId, String decompositionType, JsonArray atomicGoals, String url, String uuid) {
 
         try {
             // Creating Ontology Manager
             OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
 
             // Loading GOOP Metamodel
-            OWLOntology goop = manager.loadOntologyFromOntologyDocument(new File("/home/gabriel/Downloads/GOOP/goop-meta-model.owl"));
+            System.out.println("Loading GOOP Metamodel");
+            OWLOntology goop = manager.loadOntologyFromOntologyDocument(new StringDocumentSource(getGoopMetamodel()));
 
             // Loading source ontology and creating a resource factory
+            System.out.println("Loading source ontology and creating a resource factory");
             OWLOntology ontologiaAlvo = manager.loadOntologyFromOntologyDocument(new StringDocumentSource(file));
-            String sourceIRI = ontologiaAlvo.getOntologyID().getOntologyIRI().get().toString() + "#";
+            String sourceIRI = ontologiaAlvo.getOntologyID().getOntologyIRI().get().toString();
             OWLDataFactory factory = OWLManager.getOWLDataFactory();
 
             // Reasoner
@@ -246,8 +295,6 @@ public class FileConverter {
             OWLIndividual actor;
             OWLIndividual goal;
             List<OWLIndividual> classIndividualsList = new LinkedList<OWLIndividual>();
-
-            String[] atomics = atomicGoals.split(",");
 
             String actorRole = actorName;
             String goalName = goalId;
@@ -267,8 +314,14 @@ public class FileConverter {
             OWLObjectProperty usedToAchieve = factory.getOWLObjectProperty("https://nemo.inf.ufes.br/dev/ontology/Goop#used_to_achieve");
             OWLObjectProperty has = factory.getOWLObjectProperty("https://nemo.inf.ufes.br/dev/ontology/Goop#has");
             OWLObjectProperty domain = factory.getOWLObjectProperty("http://www.w3.org/2002/07/owl#domain");
-            OWLObjectProperty range = factory.getOWLObjectProperty("http://www.w3.org/2002/07/owl#range");
+            OWLObjectProperty range = factory.getOWLObjectProperty("http://www.w3.org/2002/07/owl#range");            
             OWLObjectProperty decompositionProperty;
+
+            // Data Propety needed to image property
+            OWLDataProperty hasURL = factory.getOWLDataProperty("https://nemo.inf.ufes.br/dev/ontology/Goop#hasURL");
+            OWLDataProperty hasUUID = factory.getOWLDataProperty("https://nemo.inf.ufes.br/dev/ontology/Goop#hasUUID");
+            
+
 
             // Decomposition Property
             if (decompositionType.equals("AND_decomposition")) {
@@ -287,7 +340,10 @@ public class FileConverter {
             OWLClassAssertionAxiom classAxiom;
 
             // Creating GOOP of source ontology
-            String goopName = sourceIRI.split("/")[sourceIRI.split("/").length];
+            System.out.println("Creating GOOP of source ontology");
+            int auxIndex = sourceIRI.lastIndexOf("/");
+            String goopName = sourceIRI.substring(auxIndex + 1);
+            System.out.println(goopName);
             OWLIndividual placeGoop = factory.getOWLNamedIndividual(IRI.create(goop.getOntologyID().getOntologyIRI().get() + "#" + goopName));
             classAxiom = factory.getOWLClassAssertionAxiom(goopType, placeGoop);
             manager.applyChange(new AddAxiom(goop, classAxiom));
@@ -295,6 +351,7 @@ public class FileConverter {
             actor = factory.getOWLNamedIndividual(IRI.create(goop.getOntologyID().getOntologyIRI().get() + "#" + actorRole));
 
             // Add Label to Actor
+            System.out.println("Add Label to Actor");
             lbl = factory.getOWLLiteral(actorName);
             label = factory.getOWLAnnotation(factory.getOWLAnnotationProperty(OWLRDFVocabulary.RDFS_LABEL.getIRI()), lbl);
             labelAxiom = factory.getOWLAnnotationAssertionAxiom(actor.asOWLNamedIndividual().getIRI(), label);
@@ -308,19 +365,21 @@ public class FileConverter {
             manager.applyChange(new AddAxiom(goop, classAxiom));
 
             // Add Label to Goal
+            System.out.println("Add Label to Goal");
             lbl = factory.getOWLLiteral(goalName.replace("_", " "));
             label = factory.getOWLAnnotation(factory.getOWLAnnotationProperty(OWLRDFVocabulary.RDFS_LABEL.getIRI()), lbl);
             labelAxiom = factory.getOWLAnnotationAssertionAxiom(goal.asOWLNamedIndividual().getIRI(), label);
             manager.applyChange(new AddAxiom(goop, labelAxiom));
 
             // Handle with Atomics
-            for(String atomicGoal : atomics) {
-                OWLNamedIndividual atomicIndividual = factory.getOWLNamedIndividual(atomicGoal);
+            System.out.println("Handle with Atomics");
+            for(JsonElement atomicGoal : atomicGoals) {
+                OWLNamedIndividual atomicIndividual = factory.getOWLNamedIndividual(atomicGoal.getAsJsonObject().get("uri").getAsString());
                 classAxiom = factory.getOWLClassAssertionAxiom(atomicGoalType, atomicIndividual);
                 manager.applyChange(new AddAxiom(goop, classAxiom));
 
                 // Add Label to Atomic Goals
-                String atomicName = atomicGoal.split("#")[1];
+                String atomicName = atomicGoal.getAsJsonObject().get("name").getAsString();
                 lbl = factory.getOWLLiteral(atomicName.replace("_", " "));
                 label = factory.getOWLAnnotation(factory.getOWLAnnotationProperty(OWLRDFVocabulary.RDFS_LABEL.getIRI()), lbl);
                 labelAxiom = factory.getOWLAnnotationAssertionAxiom(atomicIndividual.asOWLNamedIndividual().getIRI(), label);
@@ -330,7 +389,7 @@ public class FileConverter {
                 manager.applyChange(new AddAxiom(goop, decompositionAxiom));
             }
 
-            System.out.println("----- Retrieving All Classes of " + ontologiaAlvo.getOntologyID().getOntologyIRI().get());
+            System.out.println("----- Retrieving All Classes of " + ontologiaAlvo.getOntologyID().getOntologyIRI().get() + " -----");
 
             Set<OWLClass> subClses;
             Set<OWLClass> placeClasses = ontologiaAlvo.getClassesInSignature();
@@ -377,7 +436,7 @@ public class FileConverter {
                 manager.applyChange(new AddAxiom(goop, composedByAxiom));
             }
 
-            System.out.println("----- Retrieving All Object Properties of " + ontologiaAlvo.getOntologyID().getOntologyIRI().get());
+            System.out.println("----- Retrieving All Object Properties of " + ontologiaAlvo.getOntologyID().getOntologyIRI().get() + " -----");
 
             Set<OWLObjectProperty> placeObj = ontologiaAlvo.getObjectPropertiesInSignature();
             for (OWLObjectProperty iter : placeObj) {
@@ -413,7 +472,7 @@ public class FileConverter {
 
                 // Defining the range of each property
                 Set<OWLClass> rangeSet = reasoner.getObjectPropertyRanges(iter, true).getFlattened();
-                for (OWLClass iter2 : domainSet) {
+                for (OWLClass iter2 : rangeSet) {
                     for (OWLIndividual iter3 : classIndividualsList) {
                         String iter3Name = iter3.toString().replace("<", "").replace(">", "");
                         String iter2Name = iter2.toString().replace("<", "").replace(">", "");
@@ -440,15 +499,24 @@ public class FileConverter {
             OWLObjectPropertyAssertionAxiom hasAxiom = factory.getOWLObjectPropertyAssertionAxiom(has, actor, goal);
             manager.applyChange(new AddAxiom(goop, hasAxiom));
 
-            File fileformated = new File("/home/gabriel/Downloads/goophub-v2/src/main/resources/temp.rdf");
+            OWLDataPropertyAssertionAxiom dataPropertyAssertion = factory.getOWLDataPropertyAssertionAxiom(hasURL, placeGoop, url);
+            manager.applyChange(new AddAxiom(goop, dataPropertyAssertion));
+            
+            OWLDataPropertyAssertionAxiom uuidPropertyAssertion = factory.getOWLDataPropertyAssertionAxiom(hasUUID, placeGoop, uuid);
+            manager.applyChange(new AddAxiom(goop, uuidPropertyAssertion));
 
-            System.out.println("RDF/XML: ");
-            manager.saveOntology(goop, IRI.create(fileformated.toURI()));
+            File fileformated = getTempFile(false).toFile();
+
+            StringDocumentTarget target = new StringDocumentTarget();
+            
+
+            manager.saveOntology(goop, target);
+            
+            //manager.saveOntology(goop, IRI.create(fileformated.toURI()));
+            return target.toString();
         } catch (Exception e) {
-            return e.getMessage();
-        }
-        finally {
-            return "Success";
+            String error = "Erro ao gerar o arquivo: " + e.getMessage();
+            return error;
         }
     }
 
@@ -478,7 +546,6 @@ public class FileConverter {
                     OWLAxiom declareC = factory.getOWLDeclarationAxiom(c);
                     // adding declareC to the ontology is necessary to have any output
                     manager.addAxiom(ontologiaAlvo, declareC);
-
                 }
             }
 
@@ -497,11 +564,11 @@ public class FileConverter {
                 }
             }
 
-            File fileformated = new File("/home/gabriel/Downloads/goophub-v2/src/main/resources/tempConverted.rdf");
+            File fileformated = getTempFile(true).toFile();
             manager.saveOntology(ontologiaAlvo, IRI.create(fileformated.toURI()));
-
-            byte[] encoded = Files.readAllBytes(Paths.get("/home/gabriel/Downloads/goophub-v2/src/main/resources/tempConverted.rdf"));
-            fileContent = new String(encoded);
+            
+            InputStream in = new FileInputStream(fileformated);
+            fileContent = IOUtils.toString(in, StandardCharsets.UTF_8);
         } catch (Exception e) {
             e.printStackTrace();
         } finally {

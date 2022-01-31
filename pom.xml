@@ -15,7 +15,8 @@
 	<description>Demo project for Spring Boot</description>
 
 	<properties>
-		<java.version>1.8</java.version>
+		<maven.compiler.source>1.8</maven.compiler.source>
+		<maven.compiler.target>1.8</maven.compiler.target>
 	</properties>
 
 	<dependencies>
@@ -98,6 +99,14 @@
 			<artifactId>owlapi-apibinding</artifactId>
 			<version>5.1.0</version>
 		</dependency>
+
+		<!-- Cloudinary API -->
+		<dependency>
+            <groupId>com.cloudinary</groupId>
+            <artifactId>cloudinary-http44</artifactId>
+            <version>1.14.0</version>
+        </dependency>
+		
 	</dependencies>
 	
 	<repositories>

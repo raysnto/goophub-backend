@@ -12,18 +12,18 @@
     fail when attempting to work with a disk db that hasn't been created.
     -->
     <bean name="stardogAdmin" class="com.example.goophubbackend.StardogAdmin">
-        <property name="to" value="testDB"/>
+        <property name="to" value="Goophub"/>
         <property name="username" value="admin"/>
         <property name="password" value="admin"/>
-        <property name="url" value="http://localhost:5820"/>
+        <property name="url" value="http://dev.nemo.inf.ufes.br:5820"/>
     </bean>
 
     <bean name="dataSource" class="com.complexible.stardog.ext.spring.DataSourceFactoryBean">
-        <property name="to" value="testDB"/>
+        <property name="to" value="Goophub"/>
         <property name="username" value="admin"/>
         <property name="password" value="admin"/>
         <property name="reasoningType" value="true" />
-        <property name="url" value="http://localhost:5820"/>
+        <property name="url" value="http://dev.nemo.inf.ufes.br:5820"/>
     </bean>
 
     <bean name="template" class="com.complexible.stardog.ext.spring.SnarlTemplate">

@@ -63,16 +63,17 @@ public class StardogAdmin implements InitializingBean {
                 .connect()) {
 
             // A look at what databses are currently in Stardog - needed api and http
+            System.out.println("Connect into: " + to);
             aConn.list().forEach(item -> System.out.println(item));
 
             // Checks to see if the 'myNewDB' is in Stardog. If it is, we are going to drop it so we are
             // starting fresh
-            if (aConn.list().contains(to)) {
-                aConn.drop(to);
+            
+            if (!aConn.list().contains(to)) {
+                // Convenience function for creating a non-persistent in-memory database with all the default settings.
+                aConn.newDatabase(to).set(SearchOptions.SEARCHABLE, true).create();
+                //aConn.drop(to);
             }
-
-            // Convenience function for creating a non-persistent in-memory database with all the default settings.
-            aConn.newDatabase(to).set(SearchOptions.SEARCHABLE, true).create();
             aConn.close();
         }
     }
