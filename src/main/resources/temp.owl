@@ -321,6 +321,16 @@
     
 
 
+    <!-- https://nemo.inf.ufes.br/dev/ontology/Goop#Define_student_grades -->
+
+
+    <owl:NamedIndividual rdf:about="https://nemo.inf.ufes.br/dev/ontology/Goop#Define_student_grades">
+        <rdf:type rdf:resource="https://nemo.inf.ufes.br/dev/ontology/Goop#Atomic_Goal"/>
+        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Define student grades</rdfs:label>
+    </owl:NamedIndividual>
+    
+
+
     <!-- https://nemo.inf.ufes.br/dev/ontology/Goop#Describe_Person -->
 
 
@@ -336,6 +346,7 @@
 
     <owl:NamedIndividual rdf:about="https://nemo.inf.ufes.br/dev/ontology/Goop#Student">
         <rdf:type rdf:resource="https://nemo.inf.ufes.br/dev/ontology/Goop#Actor"/>
+        <has rdf:resource="https://nemo.inf.ufes.br/dev/ontology/Goop#Define_student_grades"/>
         <has rdf:resource="https://nemo.inf.ufes.br/dev/ontology/Goop#Describe_Person"/>
         <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Student</rdfs:label>
     </owl:NamedIndividual>
@@ -358,9 +369,11 @@
         <composed_by rdf:resource="http://www.ontologydesignpatterns.org/cp/owl/persons.owl#introduces"/>
         <composed_by rdf:resource="http://www.ontologydesignpatterns.org/cp/owl/persons.owl#isIntroducedBy"/>
         <composed_by rdf:resource="owl:Thing"/>
+        <used_to_achieve rdf:resource="https://nemo.inf.ufes.br/dev/ontology/Goop#Define_student_grades"/>
         <used_to_achieve rdf:resource="https://nemo.inf.ufes.br/dev/ontology/Goop#Describe_Person"/>
         <hasURL rdf:datatype="http://www.w3.org/2001/XMLSchema#string"></hasURL>
         <hasUUID rdf:datatype="http://www.w3.org/2001/XMLSchema#string">b78a2b89-2196-47e4-8ea5-0b7df27b9c44</hasUUID>
+        <hasUUID rdf:datatype="http://www.w3.org/2001/XMLSchema#string">ffb28d2c-343e-439e-8358-802f34f8e93f</hasUUID>
     </owl:NamedIndividual>
     
 
