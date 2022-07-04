@@ -83,7 +83,9 @@ public class UploadController {
             for (MultipartFile file : files) {
                 try {
                     String rootPath = System.getProperty("user.dir");
+                    String fileOriginalName = file.getOriginalFilename();
                     file.transferTo(Paths.get(rootPath + "/src/main/resources/" + file.getOriginalFilename()));
+                    System.out.println("FILENAME::::::::::::" + rootPath + "/src/main/resources/" + fileOriginalName);
                     //Files.write(, file.getBytes());
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -165,7 +167,7 @@ public class UploadController {
             for (MultipartFile file : files) {
                 try {
                     String rootPath = System.getProperty("user.dir");
-                    file.transferTo(Paths.get(rootPath + "\\src\\main\\resources\\" + file.getOriginalFilename()));
+                    file.transferTo(Paths.get(rootPath + "/src/main/resources/" + file.getOriginalFilename()));
                     //Files.write(, file.getBytes());
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -197,7 +199,7 @@ public class UploadController {
             // Add file to DataBase
             return snarlTemplate.execute(connection -> {
                 try{
-                    connection.add().io().file(ResourceUtils.getFile("C:\\Users\\gabri\\OneDrive\\Documentos\\Mestrado\\GoopHub\\goophub-backend\\src\\main\\resources\\temp.owl").toPath());
+                    connection.add().io().file(ResourceUtils.getFile("src/main/resources/temp.owl").toPath());
                     JsonObject json = new JsonObject();
                     json.addProperty("info", "upload completed.");
                     return json;

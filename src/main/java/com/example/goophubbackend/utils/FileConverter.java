@@ -32,7 +32,7 @@ public class FileConverter {
     private String getGoopMetamodel() {
         File file;
         try {
-            file = ResourceUtils.getFile("C:\\Users\\gabri\\OneDrive\\Documentos\\Mestrado\\GoopHub\\goophub-backend\\src\\main\\resources\\goop-meta-model.owl");
+            file = ResourceUtils.getFile("src/main/resources/temp.owl");
             InputStream in = new FileInputStream(file);
             return IOUtils.toString(in, StandardCharsets.UTF_8);
         } catch (IOException e) {
