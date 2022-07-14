@@ -1,0 +1,8 @@
+version: '3'
+services:
+  goophub-backend:
+    build: .
+    volumes:
+      - ./goophub-backend:/goophub-backend
+    ports:
+      - 8080:8080
